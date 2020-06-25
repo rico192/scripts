@@ -11,9 +11,9 @@ export TELEGRAM_TOKEN=${BOT_API_TOKEN}
 export ANYKERNEL=$(pwd)/anykernel3
 
 # Avoid hardcoding things
-KERNEL=Acrux
-DEFCONFIG=acrux_defconfig
-DEVICE=Platina
+KERNEL=karuizawa
+DEFCONFIG=rosy_defconfig
+DEVICE=rosy
 CIPROVIDER=CircleCI
 KERNELFW=Global
 PARSE_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
@@ -21,8 +21,7 @@ PARSE_ORIGIN="$(git config --get remote.origin.url)"
 COMMIT_POINT="$(git log --pretty=format:'%h : %s' -1)"
 
 # Kernel groups
-CI_CHANNEL=-1001420038245
-TG_GROUP=-1001435271206
+CI_CHANNEL=-1001449898361
 
 # Clang is annoying
 PATH="${KERNELDIR}/clang/bin:${PATH}"
@@ -55,16 +54,6 @@ setversioning() {
     export ZIPNAME="${KERNELNAME}.zip"
 }
 
-# Send to main group
-tg_groupcast() {
-    "${TELEGRAM}" -c "${TG_GROUP}" -H \
-    "$(
-		for POST in "${@}"; do
-			echo "${POST}"
-		done
-    )"
-}
-
 # Send to channel
 tg_channelcast() {
     "${TELEGRAM}" -c "${CI_CHANNEL}" -H \
@@ -77,8 +66,8 @@ tg_channelcast() {
 
 # Fix long kernel strings
 kernelstringfix() {
-    git config --global user.name "nysascape"
-    git config --global user.email "nysadev@raphielgang.org"
+    git config --global user.name "rico192"
+    git config --global user.email "ricoananda.9c26@gmail.com"
     git add .
     git commit -m "stop adding dirty"
 }
@@ -102,7 +91,6 @@ makekernel() {
 	    DIFF=$(( END - START ))
 	    echo -e "Kernel compilation failed, See buildlog to fix errors"
 	    tg_channelcast "Build for ${DEVICE} (${KERNELFW}) <b>failed</b> in $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)! Check ${CIPROVIDER} for errors!"
-	    tg_groupcast "Build for ${DEVICE} (${KERNELFW}) <b>failed</b> in $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)! Check ${CIPROVIDER} for errors @nysascape! @nysaci"
 	    exit 1
     fi
 }
@@ -127,13 +115,6 @@ shipkernel() {
     cd ..
 }
 
-# Ship China firmware builds
-setchinafw() {
-    export KERNELFW=China
-    # Pick DSP change
-    git cherry-pick 23dda5dd32a62488862985d7efc9d148e7f527f5
-}
-
 # Fix for CI builds running out of memory
 fixcilto() {
     sed -i 's/CONFIG_LTO=y/# CONFIG_LTO is not set/g' arch/arm64/configs/${DEFCONFIG}
@@ -143,7 +124,6 @@ fixcilto() {
 ## Start the kernel buildflow ##
 setversioning
 fixcilto
-tg_groupcast "${KERNEL} compilation clocked at $(date +%Y%m%d-%H%M)!"
 tg_channelcast "Compiler: <code>${COMPILER_STRING}</code>" \
 	"Device: <b>${DEVICE}</b>" \
 	"Kernel: <code>${KERNEL}, release ${KERNELRELEASE}</code>" \
@@ -160,4 +140,3 @@ shipkernel
 END=$(date +"%s")
 DIFF=$(( END - START ))
 tg_channelcast "Build for ${DEVICE} with ${COMPILER_STRING} took $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)!"
-tg_groupcast "Build for ${DEVICE} with ${COMPILER_STRING} took $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)! @nysaci"
